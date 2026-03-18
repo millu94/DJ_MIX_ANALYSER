@@ -48,10 +48,10 @@ Train a baseline model (sklearn):
 python scripts/train.py --labels data/raw/labels.csv --audio-dir data/raw/audio --out-dir outputs --model sklearn
 ```
 
-Train a neural net model (TensorFlow/Keras):
+Train a neural net model (PyTorch):
 
 ```bash
-python scripts/train.py --labels data/raw/labels.csv --audio-dir data/raw/audio --out-dir outputs --model tensorflow
+python scripts/train.py --labels data/raw/labels.csv --audio-dir data/raw/audio --out-dir outputs --model pytorch
 ```
 
 Evaluate a saved model:

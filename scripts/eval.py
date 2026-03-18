@@ -9,14 +9,14 @@ from sklearn.metrics import classification_report, roc_auc_score
 from aml_speakrightish.data.io import load_labels
 from aml_speakrightish.features.audio_features import featurize_file
 from aml_speakrightish.models.sklearn_model import SklearnBinaryClassifier
-from aml_speakrightish.models.tf_model import TFBinaryClassifier
+from aml_speakrightish.models.torch_model import TorchBinaryClassifier
 
 
 def load_model(model_path: str):
     p = Path(model_path)
     if p.suffix == ".joblib":
         return SklearnBinaryClassifier.load(str(p))
-    return TFBinaryClassifier.load(str(p))
+    return TorchBinaryClassifier.load(str(p))
 
 
 def main():

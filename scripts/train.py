@@ -18,7 +18,7 @@ def main():
     ap.add_argument("--labels", required=True)
     ap.add_argument("--audio-dir", required=True)
     ap.add_argument("--out-dir", default="outputs")
-    ap.add_argument("--model", default="sklearn", choices=["sklearn", "tensorflow"])
+    ap.add_argument("--model", default="sklearn", choices=["sklearn", "pytorch"])
     ap.add_argument("--sr", type=int, default=22050)
     ap.add_argument("--duration", type=float, default=None)
     args = ap.parse_args()

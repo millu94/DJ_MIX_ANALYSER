@@ -5,6 +5,6 @@ librosa
 soundfile
 matplotlib
 tqdm
-tensorflow
+torch
 
 

@@ -10,16 +10,18 @@ This project is a simple end-to-end audio classification pipeline:
    - **tensorflow** neural net (Keras)
 5. Evaluate and write outputs (metrics + plots)
 
-## Keep it simple
+## Key modules
 
-Everything you’ll touch lives in just two places:
-
+- `src/aml_speakrightish/data/`
+  - `io.py`: load `labels.csv`, resolve audio paths
+  - `splits.py`: stratified split utilities
+- `src/aml_speakrightish/features/`
+  - `audio_features.py`: log-mel / MFCC extraction helpers
+- `src/aml_speakrightish/models/`
+  - `sklearn_model.py`: baseline model + save/load
+  - `torch_model.py`: PyTorch MLP model + save/load
+  - `registry.py`: choose model by name (`sklearn` / `pytorch`)
 - `scripts/`
-  - `train.py`: loads data → extracts features → trains (`--model sklearn|tensorflow`) → saves model + plots
-  - `eval.py`: loads a saved model (`.joblib` or `.keras`) and prints metrics
-
-- `src/aml_speakrightish/`
-  - `data/`: reading `labels.csv` and train/test splitting
-  - `features/`: audio feature extraction
-  - `models/`: sklearn + tensorflow models and a small registry to pick one by name
+  - `train.py`: CLI training entrypoint
+  - `eval.py`: CLI evaluation entrypoint
 
