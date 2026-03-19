@@ -1,67 +1,87 @@
-# AML_Speakrightish
+### AML Speakrightish
 
-Binary classifier that predicts whether an audio mix is **good** or **bad** (labels: `0/1`) from a small curated dataset (~100 mixes).
+A small audio machine learning project for experimenting with basic preprocessing, dataset pipelines, and model training.
 
-## Repo layout
+The current implementation focuses on:
+- **Preprocessing**: simple, hand-crafted audio features (zero-crossing rate, spectral centroid, spectral bandwidth).
+- **Pipeline**: turning a directory of audio files plus a labels CSV into standardized train/validation/test splits.
+- **Models**: a placeholder for future training and evaluation code.
 
-- `data/`
-  - `raw/`: your original audio files + labels CSV (not committed)
-  - `processed/`: cached intermediate artifacts (not committed)
-- `src/aml_speakrightish/`: reusable pipeline code (split, preprocess, features, models)
-- `scripts/`: command-line entrypoints (train/eval)
-- `tests/`: quick checks / smoke tests
-- `outputs/`: plots + reports (not committed)
-- `models/`: trained models (not committed)
+---
 
-## Dataset format (expected)
+### Project structure
 
-Put your files here:
+- `requirements.txt` – Python dependencies (NumPy, pandas, scikit-learn, librosa, torch, etc.).
+- `src/preprocessing.py` – feature utilities (e.g. zero-crossing rate, spectral centroid, bandwidth).
+- `src/pipeline.py` – minimal pipeline to load audio, extract features, standardize them, and create train/val/test splits.
+- `src/models.py` – (planned) training and evaluation code for your models.
 
-- `data/raw/audio/` — audio files (e.g. `mix_001.wav`, `mix_002.wav`, ...)
-- `data/raw/labels.csv` — two columns:
-  - `file`: filename relative to `data/raw/audio/` (e.g. `mix_001.wav`)
-  - `label`: `0` (bad) or `1` (good)
+---
+
+### Installation
+
+1. **Create and activate a virtual environment** (recommended):
+
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate  # on Windows
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+### Data layout
+
+By default, the pipeline expects the following layout relative to the project root:
+
+- `data/audio/` – directory containing your audio files (e.g. `example.wav`).
+- `data/labels.csv` – a CSV file with at least:
+  - `filename`: the name of the audio file (e.g. `example.wav`)
+  - `label`: the target label for that file (string or integer)
 
 Example `labels.csv`:
 
 ```csv
-file,label
-mix_001.wav,1
-mix_002.wav,0
+filename,label
+sample_001.wav,0
+sample_002.wav,1
 ```
 
-## Setup
+You can change these paths by editing `AUDIO_DIR` and `LABELS_CSV` in `src/pipeline.py`.
 
-Create a virtualenv and install dependencies:
+---
+
+### Running the pipeline
+
+From the project root:
 
 ```bash
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
+python -m src.pipeline
 ```
 
-## Train and evaluate
+This will:
 
-Train a baseline model (sklearn):
+- Load the labels CSV and audio files.
+- Extract three simple features per file:
+  - zero-crossing rate
+  - spectral centroid
+  - spectral bandwidth
+- Standardize the features with `StandardScaler`.
+- Split the data into **train**, **validation**, and **test** sets.
+- Print the shapes of the resulting arrays.
 
-```bash
-python scripts/train.py --labels data/raw/labels.csv --audio-dir data/raw/audio --out-dir outputs --model sklearn
-```
+These outputs are intended to be consumed by future code in `src/models.py` for training and evaluation.
 
-Train a neural net model (PyTorch):
+---
 
-```bash
-python scripts/train.py --labels data/raw/labels.csv --audio-dir data/raw/audio --out-dir outputs --model pytorch
-```
+### Next steps
 
-Evaluate a saved model:
-
-```bash
-python scripts/eval.py --labels data/raw/labels.csv --audio-dir data/raw/audio --model-path models/model.joblib
-```
-
-## Notes / next steps
-
-- Start simple: MFCC/log-mel features + a linear model (logistic regression / linear SVM).
-- With only ~100 examples, use stratified splits + cross-validation and keep preprocessing consistent between train/test.
+- Implement model training and evaluation logic in `src/models.py`.
+- Add more robust feature extraction (e.g. MFCCs, log-mel spectrogram statistics).
+- Introduce configuration (YAML/JSON) instead of hard-coded paths and split ratios.
 
