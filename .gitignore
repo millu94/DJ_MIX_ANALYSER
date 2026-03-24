@@ -1,4 +1,5 @@
-datasets/
+datasets/Main Phase - RA Mix, Good Chunks/
+datasets/Main Phase - RA Mix, Bad Chunks/
 __pycache__/
 *.py[cod]
 *.pkl

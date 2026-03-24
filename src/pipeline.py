@@ -18,7 +18,6 @@ FEATURE_COLUMNS = [
     "tempogram_mean",
     "tempogram_std",
     "tempo_mean",
-    "tempo_std",
     "chroma_stft_mean",
     "chroma_stft_std",
     "chroma_cqt_mean",
@@ -75,7 +74,7 @@ def extract_features(datasets_root: str):
         if not os.path.exists(file_path):
             continue
         
-        print("Loading audio file...")
+        print(f"Loading audio file: {file_path}")
         signal, sr = librosa.load(file_path, sr=None)
 
         zcr = float(Preprocessing.zero_crossing_rate(signal))
@@ -100,7 +99,6 @@ def extract_features(datasets_root: str):
             float(np.mean(tempogram)),
             float(np.std(tempogram)),
             float(np.mean(tempo)),
-            float(np.std(tempo)),
             float(np.mean(chroma_stft)),
             float(np.std(chroma_stft)),
             float(np.mean(chroma_cqt)),
@@ -184,16 +182,7 @@ def build_datasets(
     )
 
     return X_train, X_val, X_test, y_train, y_val, y_test
-# def graph_correlation(X_train, y_train):
-#     """
-#     Graph the correlation between the features and the labels.
-#     """
-#     plt.figure(figsize=(10, 10))
-#     sns.heatmap(X_train.corr(), annot=True, cmap='coolwarm')
-#     plt.savefig('correlation.png')
-#     plt.show()
 
-#     return
 
 if __name__ == "__main__":
     """

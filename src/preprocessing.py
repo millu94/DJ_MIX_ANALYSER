@@ -59,6 +59,7 @@ class Preprocessing:
 
         DIRECTLY TAKEN FROM AML NOTEBOOK
         """
+        print("Running spectral_centroid")
         # Real FFT and frequency bins
         X = np.fft.rfft(x)
         f = np.fft.rfftfreq(x.shape[0], d=1.0 / sr)
@@ -80,40 +81,49 @@ class Preprocessing:
         Compute the onset strength envelope of an audio signal.
         The onset strength envelope is a measure of the energy at each time step.
         """
+        print("Running onset_strength_envelope")
         return librosa.onset.onset_strength(y=x, sr=sr)
     def tempogram(x, sr):
         """
         Compute the tempogram of an audio signal.
         The tempogram is a measure of the tempo at each time step.
         """
+        print("Running tempogram")
         return librosa.feature.tempogram(y=x, sr=sr)
     def tempo(x, sr):
         """
         Compute the tempo of an audio signal.
         The tempo is a measure of the tempo of the audio signal.
         """
-        return librosa.beat.tempo(y=x, sr=sr)
+        print("Running tempo")
+        # librosa returns an array; we reduce it to a scalar so any downstream
+        # "std" feature would be redundant.
+        return float(np.mean(librosa.beat.tempo(y=x, sr=sr)))
     def chroma_stft(x, sr):
         """
         Compute the chroma stft of an audio signal.
         The chroma stft is a measure of the chroma at each time step.
         """
+        print("Running chroma_stft")
         return librosa.feature.chroma_stft(y=x, sr=sr)
     def chroma_cqt(x, sr):
         """
         Compute the chroma cqt of an audio signal.
         The chroma cqt is a measure of the chroma at each time step.
         """
+        print("Running chroma_cqt")
         return librosa.feature.chroma_cqt(y=x, sr=sr)
     def chroma_cens(x, sr):
         """
         Compute the chroma cens of an audio signal.
         The chroma cens is a measure of the chroma at each time step.
         """
+        print("Running chroma_cens")
         return librosa.feature.chroma_cens(y=x, sr=sr)
     def mel_frequency_cepstral_coefficients(x, sr):
         """
         Compute the mel frequency cepstral coefficients of an audio signal.
         The mel frequency cepstral coefficients are a measure of the mel frequency cepstral coefficients at each time step.
         """
+        print("Running mel_frequency_cepstral_coefficients")
         return librosa.feature.mfcc(y=x, sr=sr)
