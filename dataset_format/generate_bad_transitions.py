@@ -7,36 +7,29 @@ from pydub.effects import normalize
 def process_one_segment(args):
     """
     Processes a single 'Bad' segment by either clashing two segments 
-    from the same mix or inserting a gap.
+    from the same mix or (inserting a gap, adv).
     """
-    i, input_folder, output_folder, mix_name, seg_length, good_files_for_this_mix = args
+    input_folder, output_folder, mix_name, seg_length, file1, file_list = args
+
+    # 1. EXTRACT 'num' FROM file1 TO FIX NameError
+    # e.g., '1_RA.907AIDA_30_5.flac' -> '5'
+    num = file1.replace('.flac', '').split('_')[3]
+
+    file2 = random.choice(file_list)
+    # Ensure we don't accidentally mix a file with itself to create a "bad" transition
+    while file2 == file1 and len(file_list) > 1:
+        file2 = random.choice(file_list)
     
-    # 80% Clash within the same mix, 20% Silence Gap
-    error_type = random.choices(['clash', 'gap'], weights=[0.8, 0.2], k=1)[0]
-    
-    if error_type == 'clash':
-        # Pick two different segments from the SAME mix and SAME length
-        file1, file2 = random.sample(good_files_for_this_mix, 2)
-        
-        seg1 = AudioSegment.from_file(os.path.join(input_folder, file1), format="flac")
-        seg2 = AudioSegment.from_file(os.path.join(input_folder, file2), format="flac")
+    seg1 = AudioSegment.from_file(os.path.join(input_folder, file1), format="flac")
+    seg2 = AudioSegment.from_file(os.path.join(input_folder, file2), format="flac")
 
-        # Sum them (no timestretching, just raw overlay)
-        # We use a random offset to ensure beats don't accidentally align
-        bad_segment = (seg1 - 4).overlay((seg2 - 4), position=random.randint(100, 1000))
-        output_name = f"0_{mix_name}Clash_{seg_length}_{i}.flac"
-
-    else:
-        # --- ERROR TYPE 2: THE ACCIDENTAL STOP (GAP) ---
-        file1 = random.choice(good_files_for_this_mix)
-        seg1 = AudioSegment.from_file(os.path.join(input_folder, file1), format="flac")
-        
-        gap_duration_ms = random.randint(1500, 4000)
-        gap_start_ms = random.randint(2000, len(seg1) - gap_duration_ms - 2000)
-
-        silence = AudioSegment.silent(duration=gap_duration_ms)
-        bad_segment = seg1[:gap_start_ms] + silence + seg1[gap_start_ms + gap_duration_ms:]
-        output_name = f"0_{mix_name}Gap_{seg_length}_{i}.flac"
+    # Sum them (no timestretching, just raw overlay)
+    # We use a random offset to ensure beats don't accidentally align
+    bad_segment = (seg1 - 4).overlay((seg2 - 4), position=random.randint(100, 1000))
+    # 2. ENFORCE STRICT LENGTH (Fixes future tensor shape mismatch errors)
+    # The overlay method can extend the audio duration. We slice it down to exactly match seg1
+    bad_segment = bad_segment[:len(seg1)]
+    output_name = f"0_{mix_name}_{seg_length}_{num}.flac"
 
     # Export with 5ms fades
     final_segment = normalize(bad_segment).fade_in(5).fade_out(5)
@@ -48,40 +41,35 @@ def process_one_segment(args):
     return True
 
 def generate_bad_dataset(input_folder, output_folder, num_to_generate):
+    """
+    Generates 'bad' segments that match the count of 'good' segments
+    per mix and per segment length
+    """
     all_good_files = [f for f in os.listdir(input_folder) if f.startswith('1_') and f.endswith('.flac')]
     
-    # Group files by Mix Name and Segment Length to satisfy your constraint
-    # Dict structure: {(mix_name, seg_length): [file1, file2...]}
+    # Group files by Mix Name and Segment Length 
     groups = {}
+    key_list = []
     for f in all_good_files:
         parts = f.split('_')
         if len(parts) >= 4:
             key = (parts[1], parts[2]) # (mix_name, seg_length)
             if key not in groups:
                 groups[key] = []
+                key_list.append(key)
             groups[key].append(f)
 
-    # Filter out groups that don't have enough files to make a clash
-    valid_keys = [k for k, v in groups.items() if len(v) >= 2]
-    
-    if not valid_keys:
-        print("Error: Not enough segments within individual mixes to create clashes.")
-        return
-
-    print(f"🚀 Parallel generation: {num_to_generate} bad segments (Internal Mix Clashes & Gaps)")
 
     tasks = []
-    for i in range(num_to_generate):
-        # Pick a random mix and length group for this specific 'bad' sample
-        mix_name, seg_length = random.choice(valid_keys)
-        good_files_for_this_mix = groups[(mix_name, seg_length)]
-        
-        tasks.append((i, input_folder, output_folder, mix_name, seg_length, good_files_for_this_mix))
+    for (mix_name, seg_length), file_list in groups.items():
+            # For every good file, we will create exactly one bad file task
+        for file1 in file_list:
+            tasks.append((input_folder, output_folder, mix_name, seg_length, file1, file_list))
+
+
 
     # Run in parallel
     num_cores = multiprocessing.cpu_count()
     with multiprocessing.Pool(processes=num_cores) as pool:
         for _ in pool.imap_unordered(process_one_segment, tasks):
             pass
-
-    print(f"✅ Done! Created {num_to_generate} balanced bad segments.")
