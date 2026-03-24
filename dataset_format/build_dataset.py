@@ -47,10 +47,9 @@ def main():
     
     # Check how many "Bad" files already exist so we don't duplicate them
     existing_bad_files = [f for f in os.listdir(OUT_DIR) if f.startswith('0_')]
-    
-    # We want a 1:1 balance. If we have 500 good files, we want 500 bad files.
-    num_needed = len(existing_good_files) - len(existing_bad_files)
-    
+
+    num_needed = len(existing_good_files) - len(existing_bad_files)   
+
     if num_needed > 0:
         generate_bad_dataset(OUT_DIR, OUT_DIR, num_to_generate=num_needed)
     else:
