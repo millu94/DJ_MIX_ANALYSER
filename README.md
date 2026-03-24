@@ -60,7 +60,7 @@ Labels are inferred automatically from folder names:
 
 You can change the root path by editing `DATASETS_ROOT` in `src/pipeline.py`.
 
-test 12122121
+test 12122121q
 
 ---
 
