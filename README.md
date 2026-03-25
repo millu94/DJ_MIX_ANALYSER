@@ -1,4 +1,4 @@
-### AML Speakrightish
+### DJ_MIX_ANALYSER
 
 A small audio machine learning project for experimenting with basic preprocessing, dataset pipelines, and model training.
 
