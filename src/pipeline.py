@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 import librosa
 import multiprocessing
 from tqdm import tqdm  # You may need to: pip install tqdm
+import time
 
 # Assuming Preprocessing class is in a file named preprocessing.py
 from preprocessing import Preprocessing
@@ -123,62 +124,52 @@ def save_processed_dataframe(X, y, file_paths, datasets_root, processed_dir="Dat
     print(f"Saved features to: {csv_path}")
     return df
 
-def build_datasets(datasets_root: str, test_size=0.2, val_size=0.2, random_state=42):
-    X, y, file_paths = extract_features(datasets_root)
-    _ = save_processed_dataframe(X, y, file_paths, datasets_root)
+def run_manual_split_pipeline(csv_path):
+    # Instead of extracting again, just load the CSV we just saved
+    print(f"📂 Loading features for splitting from: {csv_path}")
+    df = pd.read_csv(csv_path)
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    # Stratified split to keep label distribution consistent
-    X_train_val, X_test, y_train_val, y_test = train_test_split(
-        X_scaled, y, test_size=test_size, random_state=random_state, stratify=y
-    )
-
-    val_relative = val_size / (1.0 - test_size)
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train_val, y_train_val, test_size=val_relative, random_state=random_state, stratify=y_train_val
-    )
-
-    return X_train, X_val, X_test, y_train, y_val, y_test
-
-def run_manual_split_pipeline(datasets_root):
-    # 1. Extract features from the external drive
-    X, y, file_paths = extract_features_parallel(datasets_root) 
-    df = save_processed_dataframe(X, y, file_paths, datasets_root)
-
-    # 2. Add the mix name column for easy filtering
-    # This assumes format: label_MixName_length_num.flac
     df['mix_group'] = df['file_path'].apply(lambda x: os.path.basename(x).split('_')[1])
 
-    # 3. Define cohorts manually, this is to ensure there is't a bias over vinyl/digital
     test_mixes = ['RA.1002Nooriyah', 'RA.989Binh']
-    val_mixes  = ['RA.1030MainPhase'] # Using one mix for tuning
+    val_mixes  = ['RA.1030MainPhase']
     
-    # Everything else goes to Training
     test_df  = df[df['mix_group'].isin(test_mixes)]
     val_df   = df[df['mix_group'].isin(val_mixes)]
     train_df = df[~df['mix_group'].isin(test_mixes + val_mixes)]
 
     print("\n--- Manual Split Summary ---")
-    print(f"TRAIN: {train_df['mix_group'].unique()} ({len(train_df)} segments)")
-    print(f"VAL:   {val_df['mix_group'].unique()} ({len(val_df)} segments)")
-    print(f"TEST:  {test_df['mix_group'].unique()} ({len(test_df)} segments)")
+    print(f"TRAIN: {len(train_df)} | VAL: {len(val_df)} | TEST: {len(test_df)}")
 
     return train_df, val_df, test_df
 
 if __name__ == "__main__":
     EXTERNAL_DRIVE_PATH = "/Volumes/Bitch/datasets/djmix_dataset_partition"
-
+    
+    # Use absolute paths to avoid the "missing file" confusion
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent
+    processed_dir = project_root / "datasets" / "processed"
+    
     if os.path.exists(EXTERNAL_DRIVE_PATH):
-        # 1. Extract in parallel
+
+        start_time = time.time()
+        # 1. Run extraction ONLY ONCE
         X, y, file_paths = extract_features_parallel(EXTERNAL_DRIVE_PATH)
         
-        # 2. Save to CSV (for use in graphs.py and modelsdaniel.py)
-        df = save_processed_dataframe(X, y, file_paths, EXTERNAL_DRIVE_PATH)
+        # 2. Save and get the EXACT path
+        df = save_processed_dataframe(X, y, file_paths, EXTERNAL_DRIVE_PATH, processed_dir=str(processed_dir))
+        csv_path = processed_dir / "djmix_dataset_partition_features.csv"
         
-        # 3. Perform manual split for testing
-        train_set, val_set, test_set = run_manual_split_pipeline(EXTERNAL_DRIVE_PATH)
-        print(f"\n✅ Pipeline Complete. CSV generated at Datasets/processed/")
-    else:
-        print(f"❌ Drive not found at {EXTERNAL_DRIVE_PATH}")
+        # 3. Pass the CSV path to the splitter
+        train_set, val_set, test_set = run_manual_split_pipeline(str(csv_path))
+
+        # Calculate elapsed time
+        end_time = time.time()
+        duration_seconds = end_time - start_time
+        duration_minutes = duration_seconds / 60
+        
+        print(f"\n✅ All done! CSV is at: {csv_path}")
+        print(f"⏱️ Total processing time: {duration_seconds:.2f} seconds ({duration_minutes:.2f} minutes)")
+        
+        print(f"\n✅ All done! CSV is at: {csv_path}")
