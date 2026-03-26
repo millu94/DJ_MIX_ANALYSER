@@ -35,19 +35,18 @@ def chop_user_mix(mp3_path, output_dir):
     for f in os.listdir(output_dir):
         os.remove(os.path.join(output_dir, f))
         
-    seg_ms = 30 * 1000 # 30 second blocks
+    seg_ms = 30 * 1000  # 30 second window
+    step_ms = 15 * 1000 # Move forward by only 15 seconds
     chunk_count = 0
-    
-    print(f"🔪 Chopping into 30-second segments...")
-    for start_ms in range(0, len(mix), seg_ms):
+        
+    for start_ms in range(0, len(mix) - seg_ms, step_ms):
         end_ms = start_ms + seg_ms
-        if end_ms > len(mix):
-            break # Skip the last tiny bit if it doesn't fit a full 30s
+        chunk = mix[start_ms:end_ms]
             
         chunk = mix[start_ms:end_ms]
         chunk = normalize(chunk).fade_in(5).fade_out(5)
         
-        # We use '9' as a dummy label so your pipeline.py doesn't crash
+        # We use '9' as a dummy label so pipeline.py doesn't crash
         out_name = os.path.join(output_dir, f"9_UserMix_30_{chunk_count}.flac")
         chunk.export(out_name, format="flac", parameters=["-ar", "22050", "-sample_fmt", "s16"])
         chunk_count += 1
@@ -92,19 +91,19 @@ def analyze_user_mix():
     print(f"⏱️ Extraction completed in {(time.time() - start_time):.1f}s")
     
     # 3. Load the Pre-trained Model (The Professional Way)
-    print(f"\n🧠 Loading pre-trained AI model...")
+    print(f"\n🧠 Loading pre-trained Machine Learning model...")
     model_path = project_root / "models" / "production_rf_model.joblib"
     scaler_path = project_root / "models" / "production_scaler.joblib"
     
     if not model_path.exists() or not scaler_path.exists():
-        print("❌ Model files missing! Run modelsdaniel.py first to generate them.")
+        print("❌ Model files missing! Run modelsjosh.py first to generate them.")
         return
         
     model = joblib.load(model_path)
     scaler = joblib.load(scaler_path)
     print("✅ Model loaded instantly.")
     
-# 4. Inference (Prediction)
+    # 4. Inference (Prediction)
     print(f"\n🔍 Scanning mix for bad transitions...")
     drop_cols = ["label", "file_path", "class_name", "mix_group"]
     X_user = user_df.drop(columns=drop_cols, errors="ignore")
@@ -131,7 +130,7 @@ def analyze_user_mix():
         if prob >= SENSITIVITY_THRESHOLD: # Trigger if confidence passes our custom dial
             issues_found += 1
             # Calculate timestamps based on chunk index
-            start_sec = i * 30
+            start_sec = i * 15
             end_sec = start_sec + 30
             start_str = f"{start_sec // 60:02d}:{start_sec % 60:02d}"
             end_str = f"{end_sec // 60:02d}:{end_sec % 60:02d}"
@@ -148,6 +147,25 @@ def analyze_user_mix():
     else:
         print(f"\nTotal potential issues flagged: {issues_found}")
     print("="*60)
+
+    # --- 📈 GOOGLE SHEETS EXPORT GENERATOR ---
+    if issues_found > 0:
+        print("\n📋 COPY/PASTE FOR GOOGLE SHEETS:")
+        print("Mix Name,Start Time,Seconds,End Time,Type,Confidence (%), Comments")
+        
+        # Re-run the loop logic to print clean CSV rows
+        for i, prob in enumerate(probabilities_bad):
+            if prob >= SENSITIVITY_THRESHOLD:
+                start_sec = i * 15
+                end_sec = start_sec + 30
+                start_str = f"{start_sec // 60:02d}:{start_sec % 60:02d}"
+                end_str = f"{end_sec // 60:02d}:{end_sec % 60:02d}"
+                
+                label = "CRITICAL" if prob * 100 > 65 else "Minor"
+                
+                # Using the original MP3 filename for the first column
+                mix_name = os.path.basename(mp3_path)
+                print(f"{mix_name},{start_str},{start_sec},{end_str},{label},{prob*100:.1f}%")
 
 if __name__ == "__main__":
     analyze_user_mix()
