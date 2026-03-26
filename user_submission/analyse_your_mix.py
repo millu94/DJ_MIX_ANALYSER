@@ -167,5 +167,9 @@ def analyze_user_mix():
                 mix_name = os.path.basename(mp3_path)
                 print(f"{mix_name},{start_str},{start_sec},{end_str},{label},{prob*100:.1f}%")
 
+    # Clear out temp directory
+    for f in os.listdir(str(user_audio_dir)):
+        os.remove(os.path.join(str(user_audio_dir), f))
+
 if __name__ == "__main__":
     analyze_user_mix()
