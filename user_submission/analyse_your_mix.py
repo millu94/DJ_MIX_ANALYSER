@@ -8,6 +8,7 @@ from pydub import AudioSegment
 from pydub.effects import normalize
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
+import joblib
 
 # --- PATH RESOLUTION ---
 # 1. Get current directory (user_submission)
@@ -54,34 +55,6 @@ def chop_user_mix(mp3_path, output_dir):
     print(f"✅ Created {chunk_count} continuous segments.")
     return chunk_count
 
-def train_production_model():
-    """Trains the Random Forest model on the fly using your exact MVP rules."""
-    print(f"\n🧠 Training AI on your professional dataset...")
-    csv_path = project_root / "datasets" / "processed" / "djmix_dataset_partition_features.csv"
-    
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Missing main dataset CSV at {csv_path}! Run pipeline.py first.")
-        
-    df = pd.read_csv(csv_path)
-    df['mix_group'] = df['file_path'].apply(lambda x: os.path.basename(x).split('_')[1] if '_' in x else 'unknown')
-    
-    # Exclude your test/val sets to ensure honest training
-    test_mixes = ['RA.1002Nooriyah', 'RA.989Binh']
-    val_mixes  = ['RA.1030MainPhase']
-    train_df = df[~df['mix_group'].isin(test_mixes + val_mixes)]
-    
-    drop_cols = ["label", "file_path", "class_name", "mix_group"]
-    X_train = train_df.drop(columns=drop_cols, errors="ignore")
-    y_train = train_df["label"]
-    
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    
-    rf = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf.fit(X_train_scaled, y_train)
-    
-    print(f"✅ AI Model trained and ready (Accuracy basis: {len(train_df)} segments).")
-    return rf, scaler
 
 def analyze_user_mix():
     print("="*60)
@@ -118,8 +91,18 @@ def analyze_user_mix():
     
     print(f"⏱️ Extraction completed in {(time.time() - start_time):.1f}s")
     
-    # 3. Model Training
-    model, scaler = train_production_model()
+    # 3. Load the Pre-trained Model (The Professional Way)
+    print(f"\n🧠 Loading pre-trained AI model...")
+    model_path = project_root / "models" / "production_rf_model.joblib"
+    scaler_path = project_root / "models" / "production_scaler.joblib"
+    
+    if not model_path.exists() or not scaler_path.exists():
+        print("❌ Model files missing! Run modelsdaniel.py first to generate them.")
+        return
+        
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+    print("✅ Model loaded instantly.")
     
 # 4. Inference (Prediction)
     print(f"\n🔍 Scanning mix for bad transitions...")
