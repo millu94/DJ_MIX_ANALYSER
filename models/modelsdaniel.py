@@ -2,22 +2,19 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, auc
 
-def load_data(filepath="../datasets/processed/features.csv"):
+import joblib
+
+def load_data(filepath="datasets/processed/djmix_dataset_partition_features.csv"):
     if not os.path.exists(filepath):
-        # try fallback path
-        filepath = "datasets/processed/features.csv"
+        filepath = "../datasets/processed/djmix_dataset_partition_features.csv"
     df = pd.read_csv(filepath)
-    # Exclude metadata to isolate feature dimensions
-    X = df.drop(columns=["label", "file_path", "class_name"], errors="ignore")
-    # Target
-    y = df["label"]
-    return X, y
+    return df
 
 def train_logistic_regression(X_train_scaled, y_train, X_test_scaled, y_test):
     """Train a Logistic Regression model and return its ROC curve metrics."""
@@ -45,9 +42,7 @@ def plot_roc_curves(models_roc_data):
     for data in models_roc_data:
         plt.plot(data['fpr'], data['tpr'], label=f"{data['name']} (AUC = {data['auc']:.3f})")
     
-    # Diagonal line representing a random classifier
     plt.plot([0, 1], [0, 1], 'k--', label='Random Classifier (AUC = 0.500)')
-    
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title('Receiver Operating Characteristic (ROC) Curves')

@@ -11,7 +11,7 @@ import seaborn as sns
 
 
 def plot_pearson_correlation(
-    features_csv: str = "datasets/processed/features.csv",
+    features_csv: str = "../datasets/processed/djmix_dataset_partition_features.csv",
 ):
     """
     Plot and display a Pearson correlation heatmap from features.csv.
