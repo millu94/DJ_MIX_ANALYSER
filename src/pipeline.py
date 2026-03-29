@@ -78,6 +78,7 @@ def process_one_file(file_info):
             float(np.mean(chroma_stft)), float(np.std(chroma_stft)),
             float(np.mean(chroma_cqt)), float(np.std(chroma_cqt)),
             float(np.mean(chroma_cens)), float(np.std(chroma_cens)),
+            # ensure average is in the time dimension only and not frequency
             float(np.mean(mfcc)), float(np.std(mfcc)),
         ]
         return feature_vector, label, file_path
