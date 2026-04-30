@@ -3,12 +3,12 @@ from pydub import AudioSegment
 from segment_good_mix import chop_mix
 from generate_bad_transitions import generate_bad_dataset
 
-# Harddrive paths
+# harddrive paths
 RAW_DIR = "/Volumes/Bitch/datasets/raw_djmix_dataset"
 OUT_DIR = "/Volumes/Bitch/datasets/djmix_dataset"
 
 def main():
-    # Environment Check
+    # environment check
     try:
         AudioSegment.silent(duration=10).export("test.wav", format="wav")
         os.remove("test.wav")
@@ -19,10 +19,10 @@ def main():
     if not os.path.exists(OUT_DIR):
         os.makedirs(OUT_DIR)
 
-    # Check for existing "Good" segments (Label 1)
+    # check for existing "good" segments (label 1)
     existing_good_files = [f for f in os.listdir(OUT_DIR) if f.startswith('1_') and f.endswith('.flac')]
     
-    # --- Phase 1: Segmenting Good Mixes ---
+    # --- phase 1: segmenting good mixes ---
     if len(existing_good_files) > 0:
         print(f"\n--- Phase 1: SKIPPED ---")
         print(f"Found {len(existing_good_files)} existing good segments. Moving to Phase 2.")
@@ -36,13 +36,13 @@ def main():
                 print(f"Processing: {file_name}")
                 chop_mix(file_path, mix_name, OUT_DIR)
             
-            # Update the count after processing
+            # update the count after processing
             existing_good_files = [f for f in os.listdir(OUT_DIR) if f.startswith('1_')]
         else:
             print(f"Could not find raw directory at {RAW_DIR}")
             return
 
-    # --- Phase 2: Generating Bad Transitions ---
+    # --- phase 2: generating bad transitions ---
     print("\n--- Phase 2: Generating Bad Transitions ---")
 
     num_needed = len(existing_good_files)  

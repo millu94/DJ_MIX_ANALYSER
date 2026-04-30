@@ -6,10 +6,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import librosa
 import multiprocessing
-from tqdm import tqdm  # You may need to: pip install tqdm
+from tqdm import tqdm  # you may need to: pip install tqdm
 import time
 
-# Assuming Preprocessing class is in a file named preprocessing.py
+# assuming preprocessing class is in a file named preprocessing.py
 from preprocessing import Preprocessing
 
 FEATURE_COLUMNS = [
@@ -22,21 +22,21 @@ FEATURE_COLUMNS = [
 
 def collect_labeled_files(datasets_root: str):
     """
-    Parses files in datasets_root based on the format:
-    label_mixname_seglength_num.flac (e.g., 1_MainPhase_10s_01.flac)
+    parses files in datasets_root based on the format:
+    label_mixname_seglength_num.flac (e.g., 1_mainphase_10s_01.flac)
     """
     root = Path(datasets_root)
     if not root.exists():
         raise RuntimeError(f"Directory not found: {root}")
 
     labeled_files = []
-    # Search for both .wav and .flac based on your new format
+    # search for both .wav and .flac based on the new format
     audio_files = list(root.glob("*.flac")) + list(root.glob("*.wav"))
 
     for path in audio_files:
         filename = path.name
         try:
-            # Splits "1_MainPhase_..." into ["1", "MainPhase", ...]
+            # splits "1_mainphase_..." into ["1", "mainphase", ...]
             label_part = filename.split('_')[0]
             label = int(label_part)
             labeled_files.append((str(path), label))
@@ -52,14 +52,14 @@ def collect_labeled_files(datasets_root: str):
 
 def process_one_file(file_info):
     """
-    Worker function to process a single audio file.
+    worker function to process a single audio file.
     """
     file_path, label = file_info
     try:
-        # sr=None preserves native sampling rate
+        # sr=none preserves native sampling rate
         signal, sr = librosa.load(file_path, sr=None)
 
-        # Feature Extraction using your Preprocessing utility
+        # feature extraction using the preprocessing utility
         zcr = float(Preprocessing.zero_crossing_rate(signal))
         centroid = float(Preprocessing.spectral_centroid(signal, sr))
         onset_env = np.asarray(Preprocessing.onset_strength_envelope(signal, sr), dtype=float)
@@ -90,7 +90,7 @@ def extract_features_parallel(datasets_root: str):
     print("🚀 Starting Parallel Feature Extraction...")
     files = collect_labeled_files(datasets_root)
     
-    # Use multiprocessing Pool
+    # use multiprocessing pool
     num_cores = multiprocessing.cpu_count()
     results = []
     
@@ -100,7 +100,7 @@ def extract_features_parallel(datasets_root: str):
             if result:
                 results.append(result)
 
-    # Unpack results
+    # unpack results
     feature_rows = [r[0] for r in results]
     y_labels = [r[1] for r in results]
     file_paths = [r[2] for r in results]
@@ -118,7 +118,7 @@ def save_processed_dataframe(X, y, file_paths, datasets_root, processed_dir="Dat
     df["file_path"] = file_paths
     df["class_name"] = np.where(df["label"] == 1, "good", "bad")
 
-    # Clean up filename for the CSV
+    # clean up filename for the csv
     root_name = Path(datasets_root).name
     csv_path = processed_path / f"{root_name}_features.csv"
     df.to_csv(csv_path, index=False)
@@ -126,7 +126,7 @@ def save_processed_dataframe(X, y, file_paths, datasets_root, processed_dir="Dat
     return df
 
 def run_manual_split_pipeline(csv_path):
-    # Instead of extracting again, just load the CSV we just saved
+    # instead of extracting again, just load the csv the process just saved
     print(f"📂 Loading features for splitting from: {csv_path}")
     df = pd.read_csv(csv_path)
 
@@ -147,7 +147,7 @@ def run_manual_split_pipeline(csv_path):
 if __name__ == "__main__":
     EXTERNAL_DRIVE_PATH = "/Volumes/Bitch/datasets/djmix_dataset_partition"
     
-    # Use absolute paths to avoid the "missing file" confusion
+    # use absolute paths to avoid the "missing file" confusion
     script_dir = Path(__file__).resolve().parent
     project_root = script_dir.parent
     processed_dir = project_root / "datasets" / "processed"
@@ -155,17 +155,17 @@ if __name__ == "__main__":
     if os.path.exists(EXTERNAL_DRIVE_PATH):
 
         start_time = time.time()
-        # 1. Run extraction ONLY ONCE
+        # run extraction only once
         X, y, file_paths = extract_features_parallel(EXTERNAL_DRIVE_PATH)
         
-        # 2. Save and get the EXACT path
+        # save and get the exact path
         df = save_processed_dataframe(X, y, file_paths, EXTERNAL_DRIVE_PATH, processed_dir=str(processed_dir))
         csv_path = processed_dir / "djmix_dataset_partition_features.csv"
         
-        # 3. Pass the CSV path to the splitter
+        # pass the csv path to the splitter
         train_set, val_set, test_set = run_manual_split_pipeline(str(csv_path))
 
-        # Calculate elapsed time
+        # calculate elapsed time
         end_time = time.time()
         duration_seconds = end_time - start_time
         duration_minutes = duration_seconds / 60

@@ -17,7 +17,7 @@ def load_data(filepath="datasets/processed/djmix_dataset_partition_features.csv"
     return df
 
 def train_logistic_regression(X_train_scaled, y_train, X_test_scaled, y_test):
-    """Train a Logistic Regression model and return its ROC curve metrics."""
+    """train a logistic regression model and return its roc curve metrics."""
     lr = LogisticRegression(random_state=42)
     lr.fit(X_train_scaled, y_train)
     lr_probs = lr.predict_proba(X_test_scaled)[:, 1]
@@ -27,7 +27,7 @@ def train_logistic_regression(X_train_scaled, y_train, X_test_scaled, y_test):
     return lr, lr_fpr, lr_tpr, lr_auc
 
 def train_knn(X_train_scaled, y_train, X_test_scaled, y_test, k=5):
-    """Train a KNN model and return its ROC curve metrics."""
+    """train a knn model and return its roc curve metrics."""
     knn = KNeighborsClassifier(n_neighbors=k)
     knn.fit(X_train_scaled, y_train)
     knn_probs = knn.predict_proba(X_test_scaled)[:, 1]
@@ -37,7 +37,7 @@ def train_knn(X_train_scaled, y_train, X_test_scaled, y_test, k=5):
     return knn, knn_fpr, knn_tpr, knn_auc
 
 def plot_roc_curves(models_roc_data):
-    """Plot ROC curves for multiple models. Expects a list of dictionaries."""
+    """plot roc curves for multiple models. expects a list of dictionaries."""
     plt.figure(figsize=(8, 6))
     for data in models_roc_data:
         plt.plot(data['fpr'], data['tpr'], label=f"{data['name']} (AUC = {data['auc']:.3f})")
@@ -51,7 +51,7 @@ def plot_roc_curves(models_roc_data):
     plt.show()
 
 def graph_knn_overfitting(X_train_scaled, y_train, X_test_scaled, y_test, max_k=40):
-    """Plot k vs Accuracy and Overfitting graphs for KNN."""
+    """plot k vs accuracy and overfitting graphs for knn."""
     k_values = range(1, max_k + 1)
     train_accuracies = []
     test_accuracies = []
@@ -64,7 +64,7 @@ def graph_knn_overfitting(X_train_scaled, y_train, X_test_scaled, y_test, max_k=
         train_accuracies.append(knn_temp.score(X_train_scaled, y_train))
         test_accuracies.append(knn_temp.score(X_test_scaled, y_test))
         
-    # Graph 1: k vs Accuracy (Testing)
+    # graph 1: k vs accuracy (testing)
     plt.figure(figsize=(8, 6))
     plt.plot(k_values, test_accuracies, marker='o', linestyle='-', color='b')
     plt.xlabel('Number of Neighbors (k)')
@@ -73,7 +73,7 @@ def graph_knn_overfitting(X_train_scaled, y_train, X_test_scaled, y_test, max_k=
     plt.grid(alpha=0.3)
     plt.show()
     
-    # Graph 2: Overfitting check (Train vs Test Accuracy)
+    # graph 2: overfitting check (train vs test accuracy)
     plt.figure(figsize=(8, 6))
     plt.plot(k_values, train_accuracies, marker='o', linestyle='-', color='r', label='Training Accuracy')
     plt.plot(k_values, test_accuracies, marker='o', linestyle='-', color='b', label='Testing Accuracy')
@@ -91,32 +91,32 @@ def main():
         print("Data file not found. Please ensure 'datasets/processed/features.csv' exists.")
         return
         
-    # Split the dataset
+    # split the dataset
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
     
-    # Scale features
+    # scale features
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
     # ==========================================
-    # MODULAR EXECUTION: Uncomment what you want to run!
+    # modular execution: uncomment what you want to run!
     # ==========================================
     
-    # 1. Train Logistic Regression
+    # train logistic regression
     lr, lr_fpr, lr_tpr, lr_auc = train_logistic_regression(X_train_scaled, y_train, X_test_scaled, y_test)
     
-    # 2. Train KNN
+    # train knn
     knn, knn_fpr, knn_tpr, knn_auc = train_knn(X_train_scaled, y_train, X_test_scaled, y_test, k=5)
     
-    # 3. Plot ROC Curves
+    # plot roc curves
     roc_data = [
         {'fpr': lr_fpr, 'tpr': lr_tpr, 'auc': lr_auc, 'name': 'Logistic Regression'},
         {'fpr': knn_fpr, 'tpr': knn_tpr, 'auc': knn_auc, 'name': 'KNN'}
     ]
     plot_roc_curves(roc_data)
     
-    # 4. Graph KNN Accuracies and Overfitting
+    # graph knn accuracies and overfitting
     graph_knn_overfitting(X_train_scaled, y_train, X_test_scaled, y_test)
 
 if __name__ == "__main__":

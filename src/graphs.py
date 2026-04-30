@@ -1,6 +1,6 @@
 """
-This file will take the datasets created in the pipeline and train the models.
-It will compute many graphs and metrics to evaluate the models on the val set.
+this file will take the datasets created in the pipeline and train the models.
+it will compute many graphs and metrics to evaluate the models on the val set.
 """
 
 from pathlib import Path
@@ -22,7 +22,7 @@ def plot_pearson_correlation(
 
     df = pd.read_csv(csv_path)
 
-    # Keep only numeric columns to compute Pearson correlation.
+    # keep only numeric columns to compute pearson correlation.
     numeric_df = df.select_dtypes(include=["number"])
     if numeric_df.empty:
         raise RuntimeError("No numeric columns found in features.csv for correlation.")

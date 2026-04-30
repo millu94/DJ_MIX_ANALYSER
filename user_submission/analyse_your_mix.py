@@ -10,18 +10,18 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 import joblib
 
-# --- PATH RESOLUTION ---
-# 1. Get current directory (user_submission)
+# --- path resolution ---
+# get current directory (user_submission)
 script_dir = Path(__file__).resolve().parent
-# 2. Go up one level to the project root (DJ_MIX_ANALYSER)
+# go up one level to the project root (dj_mix_analyser)
 project_root = script_dir.parent
-# 3. Add the 'src' folder to Python's path so we can import your pipeline
+# add the 'src' folder to python's path so the process can import the pipeline
 sys.path.append(str(project_root / "src"))
 
 from pipeline import extract_features_parallel, save_processed_dataframe
 
 def chop_user_mix(mp3_path, output_dir):
-    """Segments a fresh mix into continuous 30-second chunks."""
+    """segments a fresh mix into continuous 30-second chunks."""
     print(f"\n🎧 Loading mix: {os.path.basename(mp3_path)}...")
     try:
         mix = AudioSegment.from_mp3(mp3_path).set_channels(1)
@@ -31,12 +31,12 @@ def chop_user_mix(mp3_path, output_dir):
     
     os.makedirs(output_dir, exist_ok=True)
     
-    # Clear out any old chunks from previous runs
+    # clear out any old chunks from previous runs
     for f in os.listdir(output_dir):
         os.remove(os.path.join(output_dir, f))
         
     seg_ms = 30 * 1000  # 30 second window
-    step_ms = 15 * 1000 # Move forward by only 15 seconds
+    step_ms = 15 * 1000 # move forward by only 15 seconds
     chunk_count = 0
         
     for start_ms in range(0, len(mix) - seg_ms, step_ms):
@@ -46,7 +46,7 @@ def chop_user_mix(mp3_path, output_dir):
         chunk = mix[start_ms:end_ms]
         chunk = normalize(chunk).fade_in(5).fade_out(5)
         
-        # We use '9' as a dummy label so pipeline.py doesn't crash
+        # the process use '9' as a dummy label so pipeline.py doesn't crash
         out_name = os.path.join(output_dir, f"9_UserMix_30_{chunk_count}.flac")
         chunk.export(out_name, format="flac", parameters=["-ar", "22050", "-sample_fmt", "s16"])
         chunk_count += 1
@@ -67,21 +67,21 @@ def analyze_user_mix():
         print("❌ File not found. Please try again.")
         return
 
-    # Create temporary folders inside user_submission for the audio chunks
+    # create temporary folders inside user_submission for the audio chunks
     temp_dir = script_dir / "temp_processing"
     user_audio_dir = temp_dir / "audio"
     
-    # 1. Segmentation
+    # segmentation
     num_chunks = chop_user_mix(mp3_path, str(user_audio_dir))
     if num_chunks == 0:
         print("❌ Audio file was too short to analyze.")
         return
     
-    # 2. Feature Extraction (Reuses your pipeline.py logic)
+    # feature extraction (reuses the pipeline.py logic)
     print(f"\n🔬 Extracting audio features (This will take a moment)...")
     start_time = time.time()
     
-    # Suppress the massive printout from pipeline.py temporarily for a clean UX
+    # suppress the massive printout from pipeline.py temporarily for a clean ux
     original_stdout = sys.stdout
     sys.stdout = open(os.devnull, 'w')
     X, y, file_paths = extract_features_parallel(str(user_audio_dir))
@@ -90,7 +90,7 @@ def analyze_user_mix():
     
     print(f"⏱️ Extraction completed in {(time.time() - start_time):.1f}s")
     
-    # 3. Load the Pre-trained Model (The Professional Way)
+    # load the pre-trained model (the professional way)
     print(f"\n🧠 Loading pre-trained Machine Learning model...")
     model_path = project_root / "models" / "production_rf_model.joblib"
     scaler_path = project_root / "models" / "production_scaler.joblib"
@@ -103,40 +103,40 @@ def analyze_user_mix():
     scaler = joblib.load(scaler_path)
     print("✅ Model loaded instantly.")
     
-    # 4. Inference (Prediction)
+    # inference (prediction)
     print(f"\n🔍 Scanning mix for bad transitions...")
     drop_cols = ["label", "file_path", "class_name", "mix_group"]
     X_user = user_df.drop(columns=drop_cols, errors="ignore")
     X_user_scaled = scaler.transform(X_user)
     
-    # Get the raw probability of the segment being "Bad" (Class 0)
+    # get the raw probability of the segment being "bad" (class 0)
     probabilities_bad = model.predict_proba(X_user_scaled)[:, 0] 
     
-    # --- 🎛️ SENSITIVITY DIAL 🎛️ ---
-    # Default is 0.50 (50%). 
-    # Lower it to 0.35 to make the AI much more aggressive at catching trainwrecks!
+    # ---  sensitivity dial  ---
+    # default is 0.50 (50%). 
+    # lower it to 0.35 to make the ai much more aggressive at catching trainwrecks!
     SENSITIVITY_THRESHOLD = 0.35 
     
-    # 5. Output the Report
+    # output the report
     print("\n" + "="*60)
     print("📊 MIX ANALYSIS REPORT")
     print("="*60)
     
     issues_found = 0
-    # We sort the file paths so they are read in chronological order
+    # the process sort the file paths so they are read in chronological order
     user_df = user_df.sort_values(by="file_path").reset_index(drop=True)
     
     for i, prob in enumerate(probabilities_bad):
-        if prob >= SENSITIVITY_THRESHOLD: # Trigger if confidence passes our custom dial
+        if prob >= SENSITIVITY_THRESHOLD: # trigger if confidence passes the custom dial
             issues_found += 1
-            # Calculate timestamps based on chunk index
+            # calculate timestamps based on chunk index
             start_sec = i * 15
             end_sec = start_sec + 30
             start_str = f"{start_sec // 60:02d}:{start_sec % 60:02d}"
             end_str = f"{end_sec // 60:02d}:{end_sec % 60:02d}"
             confidence = prob * 100
             
-            # Change color/emoji based on severity
+            # change color/emoji based on severity
             if confidence > 65:
                 print(f"🚨 CRITICAL Trainwreck: [{start_str} - {end_str}] (Confidence: {confidence:.1f}%)")
             else:
@@ -148,12 +148,12 @@ def analyze_user_mix():
         print(f"\nTotal potential issues flagged: {issues_found}")
     print("="*60)
 
-    # --- 📈 GOOGLE SHEETS EXPORT GENERATOR ---
+    # ---  google sheets export generator ---
     if issues_found > 0:
         print("\n📋 COPY/PASTE FOR GOOGLE SHEETS:")
         print("Mix Name,Start Time,Seconds,End Time,Type,Confidence (%), Comments")
         
-        # Re-run the loop logic to print clean CSV rows
+        # re-run the loop logic to print clean csv rows
         for i, prob in enumerate(probabilities_bad):
             if prob >= SENSITIVITY_THRESHOLD:
                 start_sec = i * 15
@@ -163,11 +163,11 @@ def analyze_user_mix():
                 
                 label = "CRITICAL" if prob * 100 > 65 else "Minor"
                 
-                # Using the original MP3 filename for the first column
+                # using the original mp3 filename for the first column
                 mix_name = os.path.basename(mp3_path)
                 print(f"{mix_name},{start_str},{start_sec},{end_str},{label},{prob*100:.1f}%")
 
-    # Clear out temp directory
+    # clear out temp directory
     for f in os.listdir(str(user_audio_dir)):
         os.remove(os.path.join(str(user_audio_dir), f))
 

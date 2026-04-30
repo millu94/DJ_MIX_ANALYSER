@@ -3,13 +3,13 @@ import shutil
 import random
 from collections import defaultdict
 
-# Harddrive paths
+# harddrive paths
 RAW_DIR = "/Volumes/Bitch/datasets/djmix_dataset_partition"
 
 def get_metadata(filename):
     """
-    Extracts info from: Label_Title_SegLength_Index
-    Example: 0_RA.989Binh_60_2848 -> Label: 0, Title: RA.989Binh, SegLength: 60
+    extracts info from: label_title_seglength_index
+    example: 0_ra.989binh_60_2848 -> label: 0, title: ra.989binh, seglength: 60
     """
     parts = filename.split('_')
     if len(parts) >= 3:
@@ -26,7 +26,7 @@ def main():
 
     all_files = [f for f in os.listdir(RAW_DIR) if f.lower().endswith(('.flac', '.wav', '.mp3'))]
     
-    # Structure: stats[mix_title][seg_length][label] = count
+    # structure: stats[mix_title][seg_length][label] = count
     stats = defaultdict(lambda: defaultdict(lambda: {"0": 0, "1": 0}))
 
     for f in all_files:
@@ -34,7 +34,7 @@ def main():
         if label in ["0", "1"] and title and seg_len:
             stats[title][seg_len][label] += 1
 
-    # Print Summary Table
+    # print summary table
     print("="*75)
     print(f"{'MIX TITLE':<25} | {'LENGTH':<8} | {'BAD (0)':<8} | {'GOOD (1)':<8}")
     print("-" * 75)
